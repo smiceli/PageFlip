@@ -12,7 +12,7 @@
 @interface PageView : NSOpenGLView {
     GLuint imageTexture;
     Page *page;
-    NSSize meshSize;
+    CGSize meshSize;
     Particle *mouseParticle;
     Particle *mouseParticle2;
 }

@@ -14,14 +14,12 @@ NSString *stringFromVector(PVector v) {
     return [NSString stringWithFormat:@"[%lf %lf %lf]", v.x, v.y, v.z];
 }
 
-int initSpring(Particle *p, Spring *s, unsigned int from, unsigned int to, double kCoef, double damping) {
+int initSpring(Particle *p, Spring *s, Constraint **c, int from, unsigned int to, double kCoef, double damping) {
     PVector r = vsub(p[from].p, p[to].p);
     s->from = from;
     s->to = to;
     s->k = kCoef;
     s->restLength = vlength(r);
-    s->minLength = s->restLength * .8;
-    s->maxLength = s->restLength * 1.2;
     s->damping = damping;
     return 1;
 }
@@ -31,7 +29,7 @@ int initSpring(Particle *p, Spring *s, unsigned int from, unsigned int to, doubl
 
 @synthesize particles, particleCount;
 
--(id)initWithSize:(NSSize)size andMeshSize:(NSSize)meshSize {
+-(id)initWithSize:(CGSize)size andMeshSize:(CGSize)meshSize {
     if(!(self = [super init])) return nil;
    
     // one additional for pull particle
@@ -70,62 +68,67 @@ int initSpring(Particle *p, Spring *s, unsigned int from, unsigned int to, doubl
     springs = (Spring*)malloc(springCount*sizeof(*springs));
     memset(springs, 0, springCount*sizeof(*springs));
     
+    constraintCount = springCount;
+    constraints = (Constraint*)malloc(constraintCount*sizeof(*constraints));
+    memset(constraints, 0, constraintCount*sizeof(*constraints));
+
     double kd = 2;
-    double ks = 60;
+    double ks = 70;
 
     Spring *s = springs;
+    Constraint *c = constraints;
     for(int y = 0; y < meshSize.height; y++) {
         for(int x = 0; x < meshSize.width; x++) {
             unsigned int from = y*meshSize.width+x;
             unsigned int to = from+1;
             if(x+1 < meshSize.width && from >= 0 && to >= 0 && from < particleCount && to < particleCount)
-                s += initSpring(particles, s, from, to, ks, kd);
+                s += initSpring(particles, s, &c, from, to, ks, kd);
             to = from+meshSize.width;
             if(y+1 < meshSize.height && from >= 0 && to >= 0 && from < particleCount && to < particleCount)
-                s += initSpring(particles, s, from, to, ks, kd);
+                s += initSpring(particles, s, &c, from, to, ks, kd);
             to = from-meshSize.width+1;
             if(x+1 < meshSize.width && y-1 > 0 && from >= 0 && to >= 0 && from < particleCount && to < particleCount)
-                s += initSpring(particles, s, from, to, ks, kd);
+                s += initSpring(particles, s, &c, from, to, ks, kd);
             to = from+meshSize.width+1;
             if(x+1 < meshSize.width && y+1 < meshSize.height && from >= 0 && to >= 0 && from < particleCount && to < particleCount)
-                s += initSpring(particles, s, from, to, ks, kd);
+                s += initSpring(particles, s, &c, from, to, ks, kd);
             to = from+4;
             if(x+4 < meshSize.width && from >= 0 && to >= 0 && from < particleCount && to < particleCount)
-                s += initSpring(particles, s, from, to, ks, kd);
-            to = from-4*meshSize.width;
+                s += initSpring(particles, s, &c, from, to, ks*3, kd);
+            to = from+4*meshSize.width;
             if(y+4 < meshSize.height && from >= 0 && to >= 0 && from < particleCount && to < particleCount)
-                s += initSpring(particles, s, from, to, ks, kd);
+                s += initSpring(particles, s, &c, from, to, ks*3, kd);
         }
     }
     
     int from, to;
-    ks *= 2;
+    ks *= 10;
 #if 1
     from = 0;
     to = from+meshSize.width*(meshSize.height-1);
-    s += initSpring(particles, s, from, to, ks, kd);
+    s += initSpring(particles, s, &c, from, to, ks, kd);
 
     from = meshSize.width-1;
     to = from+meshSize.width*(meshSize.height-1);
-    s += initSpring(particles, s, from, to, ks, kd);
+    s += initSpring(particles, s, &c, from, to, ks, kd);
     
     from = 0;
     to = from+meshSize.width-1;
-    s += initSpring(particles, s, from, to, ks, kd);
+    s += initSpring(particles, s, &c, from, to, ks, kd);
     
     from = meshSize.width*(meshSize.height-1);
     to = from+meshSize.width-1;
-    s += initSpring(particles, s, from, to, ks, kd);
+    s += initSpring(particles, s, &c, from, to, ks, kd);
 #endif
     
 #if 1
     from = 0;
     to = from+meshSize.width*(meshSize.height-1)+meshSize.width-1;
-    s += initSpring(particles, s, from, to, ks, kd);
+    s += initSpring(particles, s, &c, from, to, ks, kd);
     
     from = meshSize.width-1;
     to = meshSize.width*(meshSize.height-1);
-    s += initSpring(particles, s, from, to, ks, kd);
+    s += initSpring(particles, s, &c, from, to, ks, kd);
 #endif
 
     from = particleCount-1;
@@ -134,7 +137,7 @@ int initSpring(Particle *p, Spring *s, unsigned int from, unsigned int to, doubl
     pullParticle->fixed = YES;
     pullParticle->p = particles[to].p;
     pullParticle->mass = 1.0;
-    s += initSpring(particles, s, from, to, ks, kd);
+    s += initSpring(particles, s, &c, from, to, ks, kd);
 
     springCount = s-springs;
     return self;
@@ -150,6 +153,7 @@ int initSpring(Particle *p, Spring *s, unsigned int from, unsigned int to, doubl
     
     if(particles) free(particles);
     if(springs) free(springs);
+    if(constraints) free(constraints);
     
     [super dealloc];
 }
@@ -346,6 +350,17 @@ int initSpring(Particle *p, Spring *s, unsigned int from, unsigned int to, doubl
     }
     
 #endif
+}
+
+-(void)updateConstraints {
+    Constraint *c = constraints;
+    for(int i = 0; i < constraintCount; i++) {
+        Particle *from = &particles[c->from];
+        Particle *to = &particles[c->from];
+        double d = vlength(vsub(from->p0, to->p0));
+        c->c = abs(d-c->restLength)-.1*c->restLength;
+        if(c->c < 0) c->c = 0;
+    }
 }
 
 -(void)pullAtPoint:(PVector)point {

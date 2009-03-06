@@ -6,7 +6,12 @@
 //  Copyright 2009 CoolThingsMade. All rights reserved.
 //
 
+#ifdef TARGET_OS_IPHONE
+#import <UIKit/UIKit.h>
+#else
 #import <Cocoa/Cocoa.h>
+#endif
+
 #import "PVector.h"
 
 typedef struct {
@@ -27,10 +32,20 @@ typedef struct {
     unsigned int from, to;
     double k;
     double restLength;
-    double minLength;
-    double maxLength;
     double damping;
+    bool constrainLength;
 } Spring;
+
+typedef struct {
+    int from, to;
+    double c;
+    double dc;
+    double j;
+    double dj;
+    double minDistance;
+    double maxDistance;
+    double restLength;
+} Constraint;
 
 typedef struct {
     PVector dpdt;
@@ -44,6 +59,9 @@ typedef struct {
     Spring *springs;
     int springCount;
     
+    Constraint *constraints;
+    int constraintCount;
+    
     Particle *pullParticle;
 
     Derivatives *derivatives[5];
@@ -55,10 +73,11 @@ typedef struct {
 @property (nonatomic, assign) Particle *particles;
 @property (nonatomic, assign) int particleCount;
 
--(id)initWithSize:(NSSize)size andMeshSize:(NSSize)meshSize;
+-(id)initWithSize:(CGSize)size andMeshSize:(CGSize)meshSize;
 -(void)updateForces:(Particle*)p;
 -(void)computeDerivatives:(Derivatives*)d withParticles:(Particle*)p;
 -(void)updateParticles:(double)dt;
+-(void)updateConstraints;
 -(void)pullAtPoint:(PVector)point;
 
 @end

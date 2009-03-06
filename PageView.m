@@ -30,7 +30,7 @@ BlockColor *blockColors;
 
 
 -(void)prepareOpenGL {
-    meshSize = NSMakeSize(31, 31);
+    meshSize = CGSizeMake(31, 31);
     blockColors = (BlockColor*)malloc(meshSize.width*meshSize.height*sizeof(*blockColors));
     for(int i = 0; i < meshSize.width*meshSize.height; i++) {
 #if 0
@@ -47,7 +47,7 @@ BlockColor *blockColors;
     [[self window] setAcceptsMouseMovedEvents:YES];
     [[self window] makeFirstResponder:self];
     [self setBounds:NSMakeRect(-1, -1, 2, 2)];
-    page = [[Page alloc] initWithSize:NSMakeSize(1.0, 1.0) andMeshSize:meshSize];    
+    page = [[Page alloc] initWithSize:CGSizeMake(1.0, 1.0) andMeshSize:meshSize];    
 
 //    mouseParticle = &[page particles][(int)(meshSize.width*(meshSize.height-1)/2+meshSize.width-1)];
 //    mouseParticle2 = mouseParticle + (int)meshSize.width;
@@ -234,7 +234,7 @@ PVector normal3(PVector a, PVector b, PVector o) {
     mousePosition.x = x;
 //    mouseParticle->p.y = mouse.y*2.0;
     if(fabs(x) < 2.0)
-        mousePosition.z = sqrt(fabs((1.0 - x*x/1.0)*.75));
+        mousePosition.z = sqrt(fabs((1.0 - x*x/1.0)*.90));
 //    mouseParticle->fixed = true;
 
     [page pullAtPoint:mousePosition];
