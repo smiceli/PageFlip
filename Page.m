@@ -14,12 +14,15 @@ NSString *stringFromVector(PVector v) {
     return [NSString stringWithFormat:@"[%lf %lf %lf]", v.x, v.y, v.z];
 }
 
-int initSpring(Particle *p, Spring *s, Constraint **c, int from, unsigned int to, double kCoef, double damping) {
+int initSpring(Particle *p, Spring *s, Constraint **c, int from, unsigned int to, CGFloat kCoef, CGFloat damping) {
     PVector r = vsub(p[from].p, p[to].p);
     s->from = from;
     s->to = to;
     s->k = kCoef;
     s->restLength = vlength(r);
+    s->minLength = s->restLength*.9;
+    s->maxLength = s->restLength * 1.1;
+    s->hasConstraint = YES;
     s->damping = damping;
     return 1;
 }
@@ -46,8 +49,8 @@ int initSpring(Particle *p, Spring *s, Constraint **c, int from, unsigned int to
     for(int i = 0; i < sizeof(derivatives)/sizeof(*derivatives); i++)
         derivatives[i] = (Derivatives*)malloc(particleCount*sizeof(*derivatives[i]));
     
-    double cellWidth = size.width/(meshSize.width-1);
-    double cellHeight = size.height/(meshSize.height-1);
+    CGFloat cellWidth = size.width/(meshSize.width-1);
+    CGFloat cellHeight = size.height/(meshSize.height-1);
 
     Particle *p = particles;
     int id = 0;
@@ -72,8 +75,8 @@ int initSpring(Particle *p, Spring *s, Constraint **c, int from, unsigned int to
     constraints = (Constraint*)malloc(constraintCount*sizeof(*constraints));
     memset(constraints, 0, constraintCount*sizeof(*constraints));
 
-    double kd = 2;
-    double ks = 70;
+    CGFloat kd = 2;
+    CGFloat ks = 10;
 
     Spring *s = springs;
     Constraint *c = constraints;
@@ -102,16 +105,17 @@ int initSpring(Particle *p, Spring *s, Constraint **c, int from, unsigned int to
     }
     
     int from, to;
-    ks *= 10;
+//    ks *= 10;
 #if 1
-    from = 0;
-    to = from+meshSize.width*(meshSize.height-1);
-    s += initSpring(particles, s, &c, from, to, ks, kd);
+//    from = 0;
+//    to = from+meshSize.width*(meshSize.height-1);
+//    s += initSpring(particles, s, &c, from, to, ks, kd);
 
     from = meshSize.width-1;
     to = from+meshSize.width*(meshSize.height-1);
     s += initSpring(particles, s, &c, from, to, ks, kd);
-    
+#endif
+#if 1
     from = 0;
     to = from+meshSize.width-1;
     s += initSpring(particles, s, &c, from, to, ks, kd);
@@ -131,13 +135,16 @@ int initSpring(Particle *p, Spring *s, Constraint **c, int from, unsigned int to
     s += initSpring(particles, s, &c, from, to, ks, kd);
 #endif
 
+    ks *= 15;
     from = particleCount-1;
-    to = (int)(meshSize.width*(meshSize.height-1)/2+meshSize.width-1);
+    to = (int)(meshSize.width*(meshSize.height)/2+meshSize.width-1);
     pullParticle = &particles[from];
     pullParticle->fixed = YES;
     pullParticle->p = particles[to].p;
     pullParticle->mass = 1.0;
-    s += initSpring(particles, s, &c, from, to, ks, kd);
+    initSpring(particles, s, &c, from, to, ks, kd);
+    s->hasConstraint = NO;
+    s++;
 
     springCount = s-springs;
     return self;
@@ -176,7 +183,7 @@ int initSpring(Particle *p, Spring *s, Constraint **c, int from, unsigned int to
         
         PVector dp = vsub(to->p, from->p);
         PVector dv = vsub(to->v, from->v);
-        double length = vlength(dp);
+        CGFloat length = vlength(dp);
 
         PVector f;
         f.x = (length-s->restLength) * s->k;
@@ -225,7 +232,7 @@ int initSpring(Particle *p, Spring *s, Constraint **c, int from, unsigned int to
     }
 }
 
--(void)updateParticles:(double)dt {
+-(void)updateParticles:(CGFloat)dt {
 #if 0
     [self updateForces:particles];
     [self computeDerivatives:derivatives[0] withParticles:particles];
@@ -239,6 +246,10 @@ int initSpring(Particle *p, Spring *s, Constraint **c, int from, unsigned int to
         p->v.x += d->dvdt.x * dt;
         p->v.y += d->dvdt.y * dt;
         p->v.z += d->dvdt.z * dt;
+        if(p->p.z < 0.0) {
+            p->p.z = 0.0;
+            p->v.z = 0.0;
+        }
         p++;
         d++;
     }
@@ -278,6 +289,10 @@ int initSpring(Particle *p, Spring *s, Constraint **c, int from, unsigned int to
         p->v.x += f->dvdt.x * dt;
         p->v.y += f->dvdt.y * dt;
         p->v.z += f->dvdt.z * dt;
+        if(p->p.z < 0.0) {
+            p->p.z = 0.0;
+            p->v.z = 0.0;
+        }
         p++;
         f++;
     }
@@ -290,7 +305,7 @@ int initSpring(Particle *p, Spring *s, Constraint **c, int from, unsigned int to
      k4 = h * (*fcn)(y0 + k3);
      ynew = y0 + k1 / 6 + k2 / 3 + k3 / 3 + k4 / 6;
      */
-    double constant[] = {.5, .5, 1};
+    CGFloat constant[] = {.5, .5, 1};
     Particle *x = particles;
     for(int j = 0; j < 4; j++) {
         Derivatives *k = derivatives[j];
@@ -313,7 +328,7 @@ int initSpring(Particle *p, Spring *s, Constraint **c, int from, unsigned int to
         Particle *y0 = particles;
         k = derivatives[j];
         x = particleCopies[j];
-        double c = constant[j];
+        CGFloat c = constant[j];
         for(int i = 0; i < particleCount; i++) {
             *x = *y0;
             x->p.x += k->dpdt.x * c;
@@ -350,6 +365,50 @@ int initSpring(Particle *p, Spring *s, Constraint **c, int from, unsigned int to
     }
     
 #endif
+    
+    p = particles;
+    for(int i = 0; i < 20; i++) {
+        bool fixedUp = NO;
+        Spring *s = springs;
+        for(int si = 0; si < springCount; si++, s++) {
+            if(!s->hasConstraint) continue;
+            Particle *from = &p[s->from];
+            Particle *to = &p[s->to];
+            
+            PVector v = vsub(to->p, from->p);
+            CGFloat len = vlength(v);
+            CGFloat linearImpulse;
+            bool doConstraint = NO;
+            if(len < s->minLength) {
+                linearImpulse = len-s->minLength;
+                doConstraint = YES;
+            }
+            else if(len > s->maxLength) {
+                linearImpulse = len-s->maxLength;
+                doConstraint = YES;
+            }
+            
+            if(doConstraint) {
+                PVector normal = vnormalize(v);
+                PVector impulse = vmulConst(normal, linearImpulse);
+                
+                if(!to->fixed) {
+                    to->v = vsub(to->v, impulse);
+                    to->p = vsub(to->p, impulse);
+                    fixedUp = YES;
+                }
+                if(!from->fixed) {
+                    from->v = vadd(from->v, impulse);
+                    from->p = vadd(from->p, impulse);
+                    fixedUp = YES;
+                }
+            }
+        }
+        if(!fixedUp) {
+//            NSLog(@"%d\n", i);
+            break;
+        }
+    }
 }
 
 -(void)updateConstraints {
@@ -357,7 +416,7 @@ int initSpring(Particle *p, Spring *s, Constraint **c, int from, unsigned int to
     for(int i = 0; i < constraintCount; i++) {
         Particle *from = &particles[c->from];
         Particle *to = &particles[c->from];
-        double d = vlength(vsub(from->p0, to->p0));
+        CGFloat d = vlength(vsub(from->p0, to->p0));
         c->c = abs(d-c->restLength)-.1*c->restLength;
         if(c->c < 0) c->c = 0;
     }

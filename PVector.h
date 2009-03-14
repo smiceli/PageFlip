@@ -7,7 +7,7 @@
 //
 
 typedef struct {
-    double x, y, z;
+    CGFloat x, y, z;
 } PVector;
 
 __inline__ PVector vsub(PVector a, PVector b) __attribute__((always_inline));
@@ -37,8 +37,8 @@ __inline__ PVector vmul(PVector a, PVector b) {
     return c;
 }
 
-__inline__ PVector vmulConst(PVector a, double k) __attribute__((always_inline));
-__inline__ PVector vmulConst(PVector a, double k) {
+__inline__ PVector vmulConst(PVector a, CGFloat k) __attribute__((always_inline));
+__inline__ PVector vmulConst(PVector a, CGFloat k) {
     PVector c;
     c.x = a.x*k;
     c.y = a.y*k;
@@ -46,14 +46,14 @@ __inline__ PVector vmulConst(PVector a, double k) {
     return c;
 }
 
-__inline__ double vlength(PVector v) __attribute__((always_inline));
-__inline__ double vlength(PVector v) {
+__inline__ CGFloat vlength(PVector v) __attribute__((always_inline));
+__inline__ CGFloat vlength(PVector v) {
     return sqrt(v.x*v.x+v.y*v.y+v.z*v.z);
 }
 
 __inline__ PVector vnormalize(PVector v) __attribute__((always_inline));
 __inline__ PVector vnormalize(PVector v) {
-    double length = vlength(v);
+    CGFloat length = vlength(v);
     PVector c;
     c.x = v.x/length;
     c.y = v.y/length;

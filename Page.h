@@ -20,31 +20,32 @@ typedef struct {
     PVector p0;
     PVector p;
     PVector v;
-    PVector a;
     PVector f;
     
-    double mass;
+    CGFloat mass;
 
     bool fixed;
 } Particle;
 
 typedef struct {
     unsigned int from, to;
-    double k;
-    double restLength;
-    double damping;
-    bool constrainLength;
+    CGFloat k;
+    CGFloat restLength;
+    CGFloat minLength;
+    CGFloat maxLength;
+    bool hasConstraint;
+    CGFloat damping;
 } Spring;
 
 typedef struct {
     int from, to;
-    double c;
-    double dc;
-    double j;
-    double dj;
-    double minDistance;
-    double maxDistance;
-    double restLength;
+    CGFloat c;
+    CGFloat dc;
+    CGFloat j;
+    CGFloat dj;
+    CGFloat minDistance;
+    CGFloat maxDistance;
+    CGFloat restLength;
 } Constraint;
 
 typedef struct {
@@ -76,7 +77,7 @@ typedef struct {
 -(id)initWithSize:(CGSize)size andMeshSize:(CGSize)meshSize;
 -(void)updateForces:(Particle*)p;
 -(void)computeDerivatives:(Derivatives*)d withParticles:(Particle*)p;
--(void)updateParticles:(double)dt;
+-(void)updateParticles:(CGFloat)dt;
 -(void)updateConstraints;
 -(void)pullAtPoint:(PVector)point;
 

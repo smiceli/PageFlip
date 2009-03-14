@@ -10,7 +10,7 @@
 #import "NSBitmapImageRep+Texturing.h"
 
 typedef struct {
-    double r, g, b;
+    CGFloat r, g, b;
 } BlockColor;
 
 BlockColor *blockColors;
@@ -30,7 +30,7 @@ BlockColor *blockColors;
 
 
 -(void)prepareOpenGL {
-    meshSize = CGSizeMake(31, 31);
+    meshSize = CGSizeMake(10, 10);
     blockColors = (BlockColor*)malloc(meshSize.width*meshSize.height*sizeof(*blockColors));
     for(int i = 0; i < meshSize.width*meshSize.height; i++) {
 #if 0
@@ -59,7 +59,7 @@ BlockColor *blockColors;
     NSImageRep *imageRep = [image bestRepresentationForDevice:nil];
     if(![imageRep isKindOfClass:[NSBitmapImageRep class]]) return;
   
-#if 0
+#if 1
     NSBitmapImageRep *bitmapImageRep = (NSBitmapImageRep*)imageRep;
     glGenTextures(1, &imageTexture);
     [bitmapImageRep copyToGLTexture:imageTexture];
@@ -155,8 +155,8 @@ PVector normal3(PVector a, PVector b, PVector o) {
     };
     Particle *c = [page particles];
    
-    double x0 = c->p0.x;
-    double y0 = c->p0.y;
+    CGFloat x0 = c->p0.x;
+    CGFloat y0 = c->p0.y;
     
     glBegin(GL_QUADS);
     int ci = 0;
@@ -168,7 +168,7 @@ PVector normal3(PVector a, PVector b, PVector o) {
 
 #if 0
             PVector n = normal3((c+neighbors[1])->p, (c+neighbors[3])->p, c->p);
-//            glNormal3dv((double*)&n);
+//            glNormal3fv((CGFloat*)&n);
 #else
             Particle *particles = [page particles];
             PVector normals[4];
@@ -193,11 +193,11 @@ PVector normal3(PVector a, PVector b, PVector o) {
             PVector normalSum = normals[0];
             for(int i = 1; i < normalIndex; i++)
                 normalSum = vadd(normalSum, normals[i]);
-            PVector n = vnormalize(vmulConst(normalSum, 1.0/(double)normalIndex));
+            PVector n = vnormalize(vmulConst(normalSum, 1.0/(CGFloat)normalIndex));
 #endif
             for(int i = 0; i < 4; i++) {
                 Particle *p = c+neighbors[i];
-                glNormal3dv((double*)&n);
+                glNormal3fv((CGFloat*)&n);
                 if(imageTexture)
                     glTexCoord2f((p->p0.x-x0), (p->p0.y-y0));
                 glVertex3f(p->p.x, p->p.y, p->p.z);
@@ -226,7 +226,7 @@ PVector normal3(PVector a, PVector b, PVector o) {
 //    if(!mouseParticle) return;
     NSPoint mouse = [self convertPoint:[theEvent locationInWindow] fromView:nil];
     
-    double x = mouse.x*2.0;
+    CGFloat x = mouse.x*2.0;
     if(fabs(mouse.x*2.0) > 1.0)
         x = (x>=0 ? 1.0 : -1.0);
 
