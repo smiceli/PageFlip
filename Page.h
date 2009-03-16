@@ -54,6 +54,8 @@ typedef struct {
 } Derivatives;
 
 @interface Page : NSObject {
+    CGSize meshSize;
+    
     Particle *particles;
     int particleCount;
     
@@ -64,6 +66,7 @@ typedef struct {
     int constraintCount;
     
     Particle *pullParticle;
+    Spring *pullSpring;
 
     Derivatives *derivatives[5];
     

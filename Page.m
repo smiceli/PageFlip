@@ -32,8 +32,10 @@ int initSpring(Particle *p, Spring *s, Constraint **c, int from, unsigned int to
 
 @synthesize particles, particleCount;
 
--(id)initWithSize:(CGSize)size andMeshSize:(CGSize)meshSize {
+-(id)initWithSize:(CGSize)size andMeshSize:(CGSize)theMeshSize {
     if(!(self = [super init])) return nil;
+    
+    meshSize = theMeshSize;
    
     // one additional for pull particle
     particleCount = meshSize.width*meshSize.height + 1;
@@ -142,6 +144,7 @@ int initSpring(Particle *p, Spring *s, Constraint **c, int from, unsigned int to
     pullParticle->fixed = YES;
     pullParticle->p = particles[to].p;
     pullParticle->mass = 1.0;
+    pullSpring = s;
     initSpring(particles, s, &c, from, to, ks, kd);
     s->hasConstraint = NO;
     s++;
@@ -424,7 +427,17 @@ int initSpring(Particle *p, Spring *s, Constraint **c, int from, unsigned int to
 
 -(void)pullAtPoint:(PVector)point {
     pullParticle->p.x = point.x;
+    pullParticle->p.y = point.y;
     pullParticle->p.z = point.z;
+
+    Particle *p = particles + (int)meshSize.width-1;
+    int yi;
+    for(yi = 0; yi < (int)meshSize.height; yi++) {
+        if(point.y < p->p.y)
+            break;
+        p += (int)meshSize.width;
+    }
+    pullSpring->to = p->id;
 }
 
 @end

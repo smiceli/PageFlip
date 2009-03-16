@@ -137,12 +137,6 @@ BlockColor *blockColors;
     [self performSelector:@selector(update:) withObject:nil afterDelay:1.0/60.0];
 }
 
-PVector normal3(PVector a, PVector b, PVector o) {
-    a = vsub(a, o);
-    b = vsub(b, o);
-    return vnormalize(crossProduct(a, b));
-}
-
 - (void)drawRect:(NSRect)rect {
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -227,12 +221,12 @@ PVector normal3(PVector a, PVector b, PVector o) {
     NSPoint mouse = [self convertPoint:[theEvent locationInWindow] fromView:nil];
     
     CGFloat x = mouse.x*2.0;
-    if(fabs(mouse.x*2.0) > 1.0)
+    if(fabs(x) > 1.0)
         x = (x>=0 ? 1.0 : -1.0);
 
     PVector mousePosition;
     mousePosition.x = x;
-//    mouseParticle->p.y = mouse.y*2.0;
+    mousePosition.y = mouse.y;
     if(fabs(x) < 2.0)
         mousePosition.z = sqrt(fabs((1.0 - x*x/1.0)*.90));
 //    mouseParticle->fixed = true;

@@ -69,3 +69,12 @@ __inline__ PVector crossProduct(PVector a, PVector b) {
     c.z = a.x*b.y-a.y*b.x;
     return c;
 }
+
+__inline__ PVector normal3(PVector a, PVector b, PVector o) __attribute__ ((always_inline));
+__inline__ PVector normal3(PVector a, PVector b, PVector o) {
+    a = vsub(a, o);
+    b = vsub(b, o);
+    return vnormalize(crossProduct(a, b));
+}
+
+
