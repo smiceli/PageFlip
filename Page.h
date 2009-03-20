@@ -37,15 +37,28 @@ typedef struct {
     CGFloat damping;
 } Spring;
 
+extern const char *kLengthConstraint;
+extern const char *kAngleConstraint;
+
 typedef struct {
     int from, to;
-    CGFloat c;
-    CGFloat dc;
-    CGFloat j;
-    CGFloat dj;
-    CGFloat minDistance;
-    CGFloat maxDistance;
+    CGFloat minLength;
+    CGFloat maxLength;
     CGFloat restLength;
+} LengthConstraint;
+
+typedef struct {
+    int origin, from, to;
+    CGFloat minAngle;
+    CGFloat maxAngle;
+} AngleConstraint;
+    
+typedef struct {
+    const char *type;
+    union {
+        LengthConstraint length;
+        AngleConstraint angle;
+    } u;
 } Constraint;
 
 typedef struct {

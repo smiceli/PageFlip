@@ -48,7 +48,7 @@ __inline__ PVector vmulConst(PVector a, CGFloat k) {
 
 __inline__ CGFloat vlength(PVector v) __attribute__((always_inline));
 __inline__ CGFloat vlength(PVector v) {
-    return sqrt(v.x*v.x+v.y*v.y+v.z*v.z);
+    return sqrtf(v.x*v.x+v.y*v.y+v.z*v.z);
 }
 
 __inline__ PVector vnormalize(PVector v) __attribute__((always_inline));
@@ -68,6 +68,11 @@ __inline__ PVector crossProduct(PVector a, PVector b) {
     c.y = a.z*b.x-a.x*b.z;
     c.z = a.x*b.y-a.y*b.x;
     return c;
+}
+
+__inline__ CGFloat dotProduct(PVector a, PVector b) __attribute__((always_inline));
+__inline__ CGFloat dotProduct(PVector a, PVector b) {
+    return a.x*b.x+a.y*b.y+a.z*b.z;
 }
 
 __inline__ PVector normal3(PVector a, PVector b, PVector o) __attribute__ ((always_inline));
