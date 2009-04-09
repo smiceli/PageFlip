@@ -26,6 +26,7 @@ void initSpring(Particle *p, Spring *s, int from, unsigned int to, CGFloat kCoef
 //    s->maxLength = s->restLength * 1.1;
 //    s->hasConstraint = YES;
     s->damping = damping;
+    s->isAlive = YES;
 }
 
 void initConstraint(Constraint *c, int from, int to, CGFloat restLength, CGFloat compressionRatio) {
@@ -79,6 +80,7 @@ void initConstrainedSpring(Particle *p, Spring **s, Constraint **c, int from, un
             p->p.y = y*cellHeight;
             p->p0 = p->p;
             p->mass = 1.0;
+            p->isAlive = YES;
             if(x == 0) p->fixed = YES;
             p++;
         }
@@ -158,6 +160,7 @@ void initConstrainedSpring(Particle *p, Spring **s, Constraint **c, int from, un
     pullParticle->fixed = YES;
     pullParticle->p = particles[to].p;
     pullParticle->mass = 1.0;
+    pullParticle->isAlive = NO;
     pullSpring = s;
     initSpring(particles, s, from, to, ks*15, kd);
 //    initConstraint(c, from, to, 0, 0);
@@ -190,17 +193,21 @@ void initConstrainedSpring(Particle *p, Spring **s, Constraint **c, int from, un
     Particle *p = theParticles;
     for(int i = 0; i < particleCount; i++, p++) {
         p->f = zero;
-        if(p->fixed)
+        if(p->fixed || !p->isAlive)
             continue;
         
         // update global forces gravity, fluid
+        p->f.z = p->mass * -100;
     }
 
     p = theParticles;
     Spring *s = springs;
-    for(int i = 0; i < springCount; i++) {
+    for(int i = 0; i < springCount; i++, s++) {
+        if(!s[i].isAlive) continue;
+        
         Particle *from = &p[s->from];
         Particle *to = &p[s->to];
+        if(!from->isAlive || !to->isAlive) continue;
         
         PVector dp = vsub(to->p, from->p);
         PVector dv = vsub(to->v, from->v);
@@ -236,20 +243,19 @@ void initConstrainedSpring(Particle *p, Spring **s, Constraint **c, int from, un
             to->f.y += f.y;
             to->f.z += f.z;
         }
-        s++;
     }
 }
 
 -(void)computeDerivatives:(Derivatives*)d withParticles:(Particle*)p {
-    for(int i = 0; i < particleCount; i++) {
+    for(int i = 0; i < particleCount; i++, p++, d++) {
+        d->isAlive = p->isAlive;
+        if(!p->isAlive) continue;
         d->dpdt.x = p->v.x;
         d->dpdt.y = p->v.y;
         d->dpdt.z = p->v.z;
         d->dvdt.x = p->f.x/p->mass;
         d->dvdt.y = p->f.y/p->mass;
         d->dvdt.z = p->f.z/p->mass;
-        p++;
-        d++;
     }
 }
 
@@ -334,14 +340,14 @@ void initConstrainedSpring(Particle *p, Spring **s, Constraint **c, int from, un
         [self updateForces:x];
         [self computeDerivatives:k withParticles:x];
         
-        for(int i = 0; i < particleCount; i++) {
+        for(int i = 0; i < particleCount; i++, k++) {
+            if(!k->isAlive) continue;
             k->dpdt.x *= dt;
             k->dpdt.y *= dt;
             k->dpdt.z *= dt;
             k->dvdt.x *= dt;
             k->dvdt.y *= dt;
             k->dvdt.z *= dt;
-            k++;
         }
         
         if(j == 3) break;
@@ -352,12 +358,14 @@ void initConstrainedSpring(Particle *p, Spring **s, Constraint **c, int from, un
         CGFloat c = constant[j];
         for(int i = 0; i < particleCount; i++) {
             *x = *y0;
-            x->p.x += k->dpdt.x * c;
-            x->p.y += k->dpdt.y * c;
-            x->p.z += k->dpdt.z * c;
-            x->v.x += k->dvdt.x * c;
-            x->v.y += k->dvdt.y * c;
-            x->v.z += k->dvdt.z * c;
+            if(y0->isAlive) {
+                x->p.x += k->dpdt.x * c;
+                x->p.y += k->dpdt.y * c;
+                x->p.z += k->dpdt.z * c;
+                x->v.x += k->dvdt.x * c;
+                x->v.y += k->dvdt.y * c;
+                x->v.z += k->dvdt.z * c;
+            }
             y0++;
             k++;
             x++;
@@ -371,15 +379,17 @@ void initConstrainedSpring(Particle *p, Spring **s, Constraint **c, int from, un
     Derivatives *k3 = derivatives[2];
     Derivatives *k4 = derivatives[3];
     for(int i = 0; i < particleCount; i++) {
-        p->p.x += k1->dpdt.x/6.0 + k2->dpdt.x/3.0 + k3->dpdt.x/3.0 + k4->dpdt.x/6.0;
-        p->p.y += k1->dpdt.y/6.0 + k2->dpdt.y/3.0 + k3->dpdt.y/3.0 + k4->dpdt.y/6.0;
-        p->p.z += k1->dpdt.z/6.0 + k2->dpdt.z/3.0 + k3->dpdt.z/3.0 + k4->dpdt.z/6.0;
-        p->v.x += k1->dvdt.x/6.0 + k2->dvdt.x/3.0 + k3->dvdt.x/3.0 + k4->dvdt.x/6.0;
-        p->v.y += k1->dvdt.y/6.0 + k2->dvdt.y/3.0 + k3->dvdt.y/3.0 + k4->dvdt.y/6.0;
-        p->v.z += k1->dvdt.z/6.0 + k2->dvdt.z/3.0 + k3->dvdt.z/3.0 + k4->dvdt.z/6.0;
-        if(p->p.z < 0.0) {
-            p->p.z = 0.0;
-            p->v.z = 0.0;
+        if(p->isAlive) {
+            p->p.x += k1->dpdt.x/6.0 + k2->dpdt.x/3.0 + k3->dpdt.x/3.0 + k4->dpdt.x/6.0;
+            p->p.y += k1->dpdt.y/6.0 + k2->dpdt.y/3.0 + k3->dpdt.y/3.0 + k4->dpdt.y/6.0;
+            p->p.z += k1->dpdt.z/6.0 + k2->dpdt.z/3.0 + k3->dpdt.z/3.0 + k4->dpdt.z/6.0;
+            p->v.x += k1->dvdt.x/6.0 + k2->dvdt.x/3.0 + k3->dvdt.x/3.0 + k4->dvdt.x/6.0;
+            p->v.y += k1->dvdt.y/6.0 + k2->dvdt.y/3.0 + k3->dvdt.y/3.0 + k4->dvdt.y/6.0;
+            p->v.z += k1->dvdt.z/6.0 + k2->dvdt.z/3.0 + k3->dvdt.z/3.0 + k4->dvdt.z/6.0;
+            if(p->p.z < 0.0) {
+                p->p.z = 0.0;
+                p->v.z = 0.0;
+            }
         }
         p++;
         k1++; k2++; k3++; k4++;
@@ -393,7 +403,8 @@ bool doLengthConstraint(Particle *p, LengthConstraint *c) {
     bool fixedUp = NO;
     Particle *from = &p[c->from];
     Particle *to = &p[c->to];
-    
+    if(!from->isAlive || !to->isAlive) return NO;
+   
     PVector v = vsub(to->p, from->p);
     CGFloat len = vlength(v);
     CGFloat linearImpulse;
@@ -414,11 +425,19 @@ bool doLengthConstraint(Particle *p, LengthConstraint *c) {
         if(!to->fixed) {
             to->v = vsub(to->v, impulse);
             to->p = vsub(to->p, impulse);
+            if(to->p.z < 0.0) {
+                to->p.z = 0.0;
+                to->v.z = 0.0;
+            }
             fixedUp = YES;
         }
         if(!from->fixed) {
             from->v = vadd(from->v, impulse);
             from->p = vadd(from->p, impulse);
+            if(from->p.z < 0.0) {
+                from->p.z = 0.0;
+                from->v.z = 0.0;
+            }
             fixedUp = YES;
         }
     }
@@ -433,7 +452,7 @@ bool doAngleConstraint(Particle *p, AngleConstraint *c)  {
     Particle *to = &p[c->to];
     
     PVector uintFrom = vnormalize(vsub(from->p, origin->p));
-    PVector unitTo = vnormalize(vsub(to->p, origin->p);
+    PVector unitTo = vnormalize(vsub(to->p, origin->p));
     
     angle = acosf(dotProduct(unitTo, unitFrom));
     if(angle > c->minAngle) {
@@ -461,10 +480,15 @@ bool doAngleConstraint(Particle *p, AngleConstraint *c)  {
     }
 }
 
+-(void)clearPullPoint {
+    pullParticle->isAlive = NO;
+}
+    
 -(void)pullAtPoint:(PVector)point {
     pullParticle->p.x = point.x;
     pullParticle->p.y = point.y;
     pullParticle->p.z = point.z;
+    pullParticle->isAlive = YES;
 
     Particle *p = particles + (int)meshSize.width-1;
     int yi;

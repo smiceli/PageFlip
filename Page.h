@@ -25,6 +25,7 @@ typedef struct {
     CGFloat mass;
 
     bool fixed;
+    bool isAlive;
 } Particle;
 
 typedef struct {
@@ -35,20 +36,21 @@ typedef struct {
     CGFloat maxLength;
     bool hasConstraint;
     CGFloat damping;
+    bool isAlive;
 } Spring;
 
 extern const char *kLengthConstraint;
 extern const char *kAngleConstraint;
 
 typedef struct {
-    int from, to;
+    unsigned int from, to;
     CGFloat minLength;
     CGFloat maxLength;
     CGFloat restLength;
 } LengthConstraint;
 
 typedef struct {
-    int origin, from, to;
+    unsigned int origin, from, to;
     CGFloat minAngle;
     CGFloat maxAngle;
 } AngleConstraint;
@@ -64,6 +66,7 @@ typedef struct {
 typedef struct {
     PVector dpdt;
     PVector dvdt;
+    bool isAlive;
 } Derivatives;
 
 @interface Page : NSObject {
@@ -95,6 +98,7 @@ typedef struct {
 -(void)computeDerivatives:(Derivatives*)d withParticles:(Particle*)p;
 -(void)updateParticles:(CGFloat)dt;
 -(void)updateConstraints;
+-(void)clearPullPoint;
 -(void)pullAtPoint:(PVector)point;
 
 @end
