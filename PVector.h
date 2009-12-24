@@ -82,4 +82,5 @@ __inline__ PVector normal3(PVector a, PVector b, PVector o) {
     return vnormalize(crossProduct(a, b));
 }
 
-
+void planeEquation(CGFloat planeEa[4], PVector a, PVector b, PVector o);
+void fillInPlanarShadowMatrix(CGFloat projMatrix[16], CGFloat planeEq[4], PVector lightPos);

@@ -96,7 +96,7 @@ typedef struct {
 -(id)initWithSize:(CGSize)size andMeshSize:(CGSize)meshSize;
 -(void)updateForces:(Particle*)p;
 -(void)computeDerivatives:(Derivatives*)d withParticles:(Particle*)p;
--(void)updateParticles:(CGFloat)dt;
+-(void)updateParticles:(NSTimeInterval)dt;
 -(void)updateConstraints;
 -(void)clearPullPoint;
 -(void)pullAtPoint:(PVector)point;
